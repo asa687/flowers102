@@ -73,24 +73,25 @@ class ResnetBottleneckBlock(nn.Module):
 
         self.bn1 = nn.BatchNorm2d(out_channels//4)
         self.bn2 = nn.BatchNorm2d(out_channels//4)
-        self.bn3 = nn.BatchNorm2d(out_channels)
+        self.bn3 = nn.BatchNorm2d(out_channels) 
+        self.relu = nn.ReLU()
 
     def forward(self, input):
         shortcut = self.shortcut(input)
-        input = nn.ReLU()(self.bn1(self.conv1(input)))
-        input = nn.ReLU()(self.bn2(self.conv2(input)))
-        input = nn.ReLU()(self.bn3(self.conv3(input)))
+        input = self.relu(self.bn1(self.conv1(input)))
+        input = self.relu(self.bn2(self.conv2(input)))
+        input = self.relu(self.bn3(self.conv3(input)))
         input = input + shortcut
-        return nn.ReLU()(input)
+        return self.relu(input)
 
 class ResNet(nn.Module):
     def __init__(self, in_channels, resblock, repeat, useBottleneck=True, outputs=102):
         super().__init__()
         self.layer0 = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU()
+            nn.ReLU(), 
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
 
         if useBottleneck:
@@ -144,7 +145,7 @@ if torch.cuda.is_available():
    net = net.to(deviceType()) 
 
 criterion = nn.CrossEntropyLoss() 
-max_lr = 0.064
+max_lr = 0.01
 weight_decay = 3.0517578125e-05 
 label_smoothing = 0.1
 optimizer = optim.SGD(net.parameters(), lr=max_lr, momentum=0.875, weight_decay=weight_decay) 
