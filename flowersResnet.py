@@ -1,7 +1,8 @@
 import os
 from tempfile import TemporaryDirectory
 import torch.utils
-import torch.utils.data
+import torch.utils.data 
+from torch.optim import lr_scheduler as schedulers
 from torchsummary import summary
 import torch 
 import numpy as np 
@@ -31,8 +32,8 @@ writer = SummaryWriter()
 batch_size = 64 
 model_pkl_file = "flowers102CNN.pt" 
 
-trainTransform = transforms.Compose([transforms.AutoAugment(), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]), transforms.Resize((265,265)), transforms.CenterCrop((224,224)), transforms.RandomHorizontalFlip(0.5),transforms.RandomVerticalFlip(0.5), transforms.RandomRotation(degrees=(0, 45))]) 
-testTransform = transforms.Compose([transforms.ToTensor(), transforms.Resize((224,224))]) 
+trainTransform = transforms.Compose([transforms.AutoAugment(), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]), transforms.RandomResizedCrop((224,224)), transforms.RandomHorizontalFlip(0.5)]) 
+testTransform = transforms.Compose([transforms.ToTensor(),transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]) ,transforms.Resize((224,224))]) 
 
 
 def deviceType():
@@ -143,14 +144,17 @@ if torch.cuda.is_available():
    net = net.to(deviceType()) 
 
 criterion = nn.CrossEntropyLoss() 
-max_lr = 0.02 
-weight_decay = 0.0001 
-optimizer = optim.Adam(net.parameters(),lr = 0.01, weight_decay=weight_decay)  
+max_lr = 0.064
+weight_decay = 3.0517578125e-05 
+label_smoothing = 0.1
+optimizer = optim.SGD(net.parameters(), lr=max_lr, momentum=0.875, weight_decay=weight_decay) 
+scheduler = schedulers.CosineAnnealingLR(optimizer, T_max=10)
+# optimizer = optim.Adam(net.parameters(),lr = 0.01, weight_decay=weight_decay)  
 
 
 
 def train_model(epochs):  
-    criterion = nn.CrossEntropyLoss() 
+    criterion = nn.CrossEntropyLoss(label_smoothing = 0.1)
     for epoch in range(epochs): 
 
         iterations = 0
@@ -174,7 +178,8 @@ def train_model(epochs):
             # zero the parameter gradients
             optimizer.zero_grad()  
             loss.backward()
-            optimizer.step() 
+            optimizer.step()  
+            scheduler.step()
             torch.cuda.empty_cache()
 
             runningLoss += loss.item()    
@@ -259,7 +264,7 @@ if __name__ == "__main__":
     print("enter 1 to build from scratch, 2 to use prebuilt model") 
     n = int(input()) 
     if n == 1:     
-        train_model(500)    
+        train_model(100)    
         torch.save(net.state_dict(), model_pkl_file) 
         net.eval()
         testing_model()  
