@@ -32,7 +32,7 @@ writer = SummaryWriter()
 batch_size = 64 
 model_pkl_file = "flowers102CNN.pt" 
 
-trainTransform = transforms.Compose([transforms.AutoAugment(), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]), transforms.RandomResizedCrop((224,224)), transforms.RandomHorizontalFlip(0.5)]) 
+trainTransform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]), transforms.RandomResizedCrop((224,224)), transforms.RandomHorizontalFlip(0.5)]) 
 testTransform = transforms.Compose([transforms.ToTensor(),transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]) ,transforms.Resize((224,224))]) 
 
 
@@ -140,7 +140,7 @@ class ResNet(nn.Module):
 
 
 
-net = ResNet(3, ResnetBottleneckBlock, [3, 4, 6, 3], useBottleneck=True, outputs=102)  
+net = ResNet(3, ResnetBottleneckBlock, [3, 4, 6, 3], useBottleneck=False, outputs=102)  
 if torch.cuda.is_available():
    net = net.to(deviceType()) 
 
@@ -265,18 +265,18 @@ if __name__ == "__main__":
     print("enter 1 to build from scratch, 2 to use prebuilt model") 
     n = int(input()) 
     if n == 1:     
-        train_model(100)    
+        train_model(300)    
         torch.save(net.state_dict(), model_pkl_file) 
         net.eval()
         testing_model()  
     elif n == 2:  
-        net = ResNet(3, ResnetBottleneckBlock, [3, 4, 6, 3], useBottleneck=True, outputs=102)   
+        net = ResNet(3, ResnetBottleneckBlock, [3, 4, 6, 3], useBottleneck=False, outputs=102)   
         net.load_state_dict(torch.load(model_pkl_file, weights_only=True))
         net.eval()
         net.to(deviceType())
         testing_model()    
     elif n == 3:  
-        net = ResNet(3, ResnetBottleneckBlock, [3, 4, 6, 3], useBottleneck=True, outputs=102)   
+        net = ResNet(3, ResnetBottleneckBlock, [3, 4, 6, 3], useBottleneck=False, outputs=102)   
         net.load_state_dict(torch.load(model_pkl_file, weights_only=True))
         net.eval()
         net.to(deviceType()) 
