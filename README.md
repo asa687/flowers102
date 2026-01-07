@@ -1,1 +1,1 @@
-A classifier for the flowers 102 dataset using the resnet 34 ml model structure.
+A classifier for the flowers 102 dataset using the ResNet 34 machine learning model structure.
