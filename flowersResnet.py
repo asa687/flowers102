@@ -32,8 +32,8 @@ writer = SummaryWriter()
 batch_size = 64 
 model_pkl_file = "flowers102CNN.pt" 
 
-trainTransform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]), transforms.RandomResizedCrop((224,224)), transforms.RandomHorizontalFlip(0.5)]) 
-testTransform = transforms.Compose([transforms.ToTensor(),transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]) ,transforms.Resize((224,224))]) 
+trainTransform = transforms.Compose([transforms.RandomResizedCrop((224,224)), transforms.RandomHorizontalFlip(0.5), transforms.ColorJitter(0.2,0.2,0.2,0.1), transforms.ToTensor(), transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])]) 
+testTransform = transforms.Compose([transforms.Resize((256,256)), transforms.CenterCrop((224,224)), transforms.ToTensor(), transforms.Normalize(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225])]) 
 
 
 def deviceType():
@@ -44,16 +44,16 @@ def deviceType():
 
 
 
-trainset = datasets.Flowers102(root='./data', split= "train", download=True, transform=trainTransform)
+trainset = datasets.Flowers102(root='./data', split= "train", download=True, transform=trainTransform, target_transform=lambda t: t-1)
 train_dataloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=0)
 
-testset = datasets.Flowers102(root='./data', split="test", download=True, transform=testTransform)
+testset = datasets.Flowers102(root='./data', split="test", download=True, transform=testTransform, target_transform=lambda t: t-1)
 test_dataloader = torch.utils.data.DataLoader(testset, batch_size=11, shuffle=True, num_workers=0) 
 
-validationset = datasets.Flowers102(root='./data', split="val", download=True, transform=testTransform)
+validationset = datasets.Flowers102(root='./data', split="val", download=True, transform=testTransform, target_transform=lambda t: t-1)
 validation_dataloader = torch.utils.data.DataLoader(validationset, batch_size=16, shuffle=True, num_workers=0) 
 
-singletestset = datasets.Flowers102(root='./data', split="test", download=True, transform=testTransform)
+singletestset = datasets.Flowers102(root='./data', split="test", download=True, transform=testTransform, target_transform=lambda t: t-17)
 single_test_dataloader = torch.utils.data.DataLoader(singletestset, batch_size=1, shuffle=True, num_workers=0) 
 
 class ResnetBottleneckBlock(nn.Module):
@@ -180,11 +180,10 @@ def train_model(epochs):
             optimizer.zero_grad()  
             loss.backward()
             optimizer.step()  
-            scheduler.step()
             torch.cuda.empty_cache()
-
             runningLoss += loss.item()    
-            trainAccuracy += (labels.data == predicted).sum().item() 
+            trainAccuracy += (labels.data == predicted).sum().item()  
+        scheduler.step()
         writer.add_scalar("Loss/train", loss, epoch) 
 
         valRunningLoss = 0
@@ -265,7 +264,7 @@ if __name__ == "__main__":
     print("enter 1 to build from scratch, 2 to use prebuilt model") 
     n = int(input()) 
     if n == 1:     
-        train_model(300)    
+        train_model(500)    
         torch.save(net.state_dict(), model_pkl_file) 
         net.eval()
         testing_model()  
